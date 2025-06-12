@@ -1,121 +1,463 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="ZXing for JS">
+  <title>Barcode Tool</title>
 
-  <title>ZXing TypeScript | Decoding from camera stream</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-  <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null"
-    href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
-  <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null"
-    href="https://unpkg.com/normalize.css@8.0.0/normalize.css">
-  <link rel="stylesheet" rel="preload" as="style" onload="this.rel='stylesheet';this.onload=null"
-    href="https://unpkg.com/milligram@1.3.0/dist/milligram.min.css">
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+      min-height: 100vh;
+      color: #e4e4e7;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+      color: #fafafa;
+      padding: 1.5rem;
+      text-align: center;
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+      font-weight: 600;
+      border-bottom: 1px solid #27272a;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 0.875rem 2rem;
+      background: #27272a;
+      border: 1px solid #3f3f46;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      color: #a1a1aa;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .tab:hover {
+      background: #3f3f46;
+      border-color: #52525b;
+      color: #e4e4e7;
+      transform: translateY(-2px);
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border-color: #6366f1;
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+
+    .content {
+      display: none;
+      padding: 2rem;
+      max-width: 700px;
+      margin: 0 auto 2rem;
+      background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+      border: 1px solid #3f3f46;
+    }
+
+    .content.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #fafafa;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    input, button, select {
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      margin-top: 1rem;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #3f3f46;
+      background: #27272a;
+      color: #e4e4e7;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      background: #18181b;
+    }
+
+    input::placeholder {
+      color: #71717a;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    video {
+      border: 2px solid #3f3f46;
+      width: 100%;
+      max-width: 500px;
+      margin: 1.5rem auto;
+      display: block;
+      border-radius: 12px;
+      background: #0c0c0c;
+    }
+
+    pre {
+      background: #0c0c0c;
+      padding: 1.25rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      border: 1px solid #27272a;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+    }
+
+    code {
+      color: #a3e635;
+      font-weight: 500;
+    }
+
+    img {
+      margin-top: 1.5rem;
+      max-width: 100%;
+      border-radius: 12px;
+      border: 2px solid #3f3f46;
+      background: white;
+      padding: 1rem;
+    }
+
+    #barcodeResult {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #a1a1aa;
+      font-weight: 500;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #sourceSelectPanel {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #0c0c0c;
+      border-radius: 10px;
+      border: 1px solid #27272a;
+    }
+
+    select {
+      margin-top: 0.5rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 0.5rem;
+      }
+
+      .content {
+        padding: 1.5rem;
+        margin: 0 0.5rem 2rem;
+      }
+
+      .tabs {
+        margin: 1rem 0;
+        padding: 0 0.5rem;
+      }
+
+      .tab {
+        padding: 0.75rem 1.5rem;
+        min-width: 100px;
+        font-size: 0.875rem;
+      }
+
+      .button-group {
+        grid-template-columns: 1fr;
+      }
+
+      video {
+        max-width: 100%;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding: 1rem;
+      }
+
+      .content {
+        padding: 1rem;
+        margin: 0 0.25rem 1rem;
+      }
+
+      .tabs {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .tab {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      input, button, select {
+        padding: 0.75rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #3f3f46;
+      border-radius: 50%;
+      border-top-color: #6366f1;
+      animation: spin 1s ease-in-out infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Success message */
+    .success-message {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      text-align: center;
+      font-weight: 500;
+    }
+  </style>
 </head>
-
 <body>
 
-  <main class="wrapper" style="padding-top:2em">
+  <header>
+    <div class="container">
+      📦 Barcode Generator & Scanner
+    </div>
+  </header>
 
-    <section class="container" id="demo-content">
-      <!-- <h1 class="title">Scan 1D/2D Code from Video Camera</h1> -->
+  <div class="container">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('generator')">Generate</button>
+      <button class="tab" onclick="switchTab('scanner')">Scan</button>
+    </div>
 
-      <!-- <p> -->
-        <!-- <a class="button-small button-outline" href="../../index.html">HOME 🏡</a> -->
-      <!-- </p> -->
+    <!-- Barcode Generator -->
+    <div id="generator" class="content active">
+      <h2>Generate Barcode</h2>
+      <input type="text" id="barcodeText" placeholder="Enter text or numbers..." />
+      <button onclick="generateBarcode()">Generate Barcode</button>
+      <div id="barcodeResult"></div>
+    </div>
 
-      <!-- <p>This example shows how to scan any supported 1D/2D code with ZXing javascript library from the device video
-        camera. If more
-        than one video input devices are available (for example front and back camera) the example shows how to read
-        them and use a select to change the input device.</p> -->
+    <!-- Barcode Scanner -->
+    <div id="scanner" class="content">
+      <h2>Scan Barcode</h2>
+      <div class="button-group">
+        <button id="startButton">Start Scanner</button>
+        <button id="resetButton">Reset</button>
+      </div>
+      <video id="video"></video>
 
-      <div>
-        <a class="button" id="startButton">Start</a>
-        <a class="button" id="resetButton">Reset</a>
+      <div id="sourceSelectPanel" style="display: none;">
+        <label for="sourceSelect">Camera Source:</label>
+        <select id="sourceSelect"></select>
       </div>
 
-      <div>
-        <video id="video" width="300" height="200" style="border: 1px solid gray"></video>
-      </div>
+      <label>Scan Result:</label>
+      <pre><code id="result">No barcode detected yet...</code></pre>
+    </div>
+  </div>
 
-      <div id="sourceSelectPanel" style="display:none">
-        <label for="sourceSelect">Change video source:</label>
-        <select id="sourceSelect" style="max-width:400px">
-        </select>
-      </div>
+  <!-- ZXing Library -->
+  <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
 
-      <label>Result:</label>
-      <pre><code id="result"></code></pre>
+  <!-- Logic -->
+  <script>
+    function switchTab(id) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`[onclick="switchTab('${id}')"]`).classList.add('active');
+      document.getElementById(id).classList.add('active');
+    }
 
-      <!-- <p>See the <a href="https://github.com/zxing-js/library/tree/master/docs/examples/multi-camera/">source code</a>
-        for this example.</p> -->
-    </section>
+    function generateBarcode() {
+      const text = document.getElementById("barcodeText").value.trim();
+      if (!text) {
+        alert("Please enter text to generate barcode.");
+        return;
+      }
 
-    <!-- <footer class="footer">
-      <section class="container">
-        <p>ZXing TypeScript Demo. Licensed under the <a target="_blank"
-            href="https://github.com/zxing-js/library#license" title="MIT">MIT</a>.</p>
-      </section>
-    </footer> -->
+      const button = event.target;
+      const originalText = button.textContent;
+      button.innerHTML = 'Generating... <span class="loading"></span>';
+      button.disabled = true;
 
-  </main>
+      const url = `https://barcodeapi.org/api/auto/${encodeURIComponent(text)}`;
+      fetch(url, { cache: "no-store" })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to generate barcode');
+          return response.blob();
+        })
+        .then(blob => {
+          const img = document.createElement("img");
+          img.src = URL.createObjectURL(blob);
+          img.alt = `Barcode for: ${text}`;
+          const result = document.getElementById("barcodeResult");
+          result.innerHTML = "";
+          result.appendChild(img);
+          
+          const successMsg = document.createElement("div");
+          successMsg.className = "success-message";
+          successMsg.textContent = "Barcode generated successfully!";
+          result.appendChild(successMsg);
+        })
+        .catch(error => {
+          console.error("Error generating barcode:", error);
+          document.getElementById("barcodeResult").innerHTML = 
+            '<div style="color: #ef4444; text-align: center; margin-top: 1rem;">Failed to generate barcode. Please try again.</div>';
+        })
+        .finally(() => {
+          button.textContent = originalText;
+          button.disabled = false;
+        });
+    }
 
-  <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
-  <script type="text/javascript">
     window.addEventListener('load', function () {
       let selectedDeviceId;
-      const codeReader = new ZXing.BrowserMultiFormatReader()
-      console.log('ZXing code reader initialized')
+      const codeReader = new ZXing.BrowserMultiFormatReader();
+      
       codeReader.listVideoInputDevices()
-        .then((videoInputDevices) => {
-          const sourceSelect = document.getElementById('sourceSelect')
-          selectedDeviceId = videoInputDevices[0].deviceId
-          if (videoInputDevices.length >= 1) {
-            videoInputDevices.forEach((element) => {
-              const sourceOption = document.createElement('option')
-              sourceOption.text = element.label
-              sourceOption.value = element.deviceId
-              sourceSelect.appendChild(sourceOption)
-            })
+        .then(videoInputDevices => {
+          const sourceSelect = document.getElementById('sourceSelect');
+          
+          if (videoInputDevices.length > 0) {
+            selectedDeviceId = videoInputDevices[0].deviceId;
 
-            sourceSelect.onchange = () => {
-              selectedDeviceId = sourceSelect.value;
-            };
-
-            const sourceSelectPanel = document.getElementById('sourceSelectPanel')
-            sourceSelectPanel.style.display = 'block'
+            if (videoInputDevices.length > 1) {
+              videoInputDevices.forEach((element, index) => {
+                const option = document.createElement('option');
+                option.text = element.label || `Camera ${index + 1}`;
+                option.value = element.deviceId;
+                sourceSelect.appendChild(option);
+              });
+              sourceSelect.onchange = () => selectedDeviceId = sourceSelect.value;
+              document.getElementById('sourceSelectPanel').style.display = 'block';
+            }
           }
 
           document.getElementById('startButton').addEventListener('click', () => {
+            const button = document.getElementById('startButton');
+            button.textContent = 'Scanning...';
+            button.disabled = true;
+            
             codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
               if (result) {
-                console.log(result)
-                document.getElementById('result').textContent = result.text
+                document.getElementById('result').textContent = result.text;
+                document.getElementById('result').style.color = '#a3e635';
               }
               if (err && !(err instanceof ZXing.NotFoundException)) {
-                console.error(err)
-                document.getElementById('result').textContent = err
+                document.getElementById('result').textContent = `Error: ${err}`;
+                document.getElementById('result').style.color = '#ef4444';
               }
-            })
-            console.log(`Started continous decode from camera with id ${selectedDeviceId}`)
-          })
+            });
+          });
 
           document.getElementById('resetButton').addEventListener('click', () => {
-            codeReader.reset()
-            document.getElementById('result').textContent = '';
-            console.log('Reset.')
-          })
+            codeReader.reset();
+            document.getElementById('result').textContent = 'No barcode detected yet...';
+            document.getElementById('result').style.color = '#a1a1aa';
+            document.getElementById('startButton').textContent = 'Start Scanner';
+            document.getElementById('startButton').disabled = false;
+          });
+        })
+        .catch(err => {
+          console.error('Camera access error:', err);
+          document.getElementById('result').textContent = 'Camera access denied or not available';
+          document.getElementById('result').style.color = '#ef4444';
+        });
+    });
 
-        })
-        .catch((err) => {
-          console.error(err)
-        })
-    })
+    // Enter key support for barcode generation
+    document.getElementById('barcodeText').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        generateBarcode();
+      }
+    });
   </script>
 
 </body>
-
 </html>
